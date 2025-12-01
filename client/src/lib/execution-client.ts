@@ -6,7 +6,8 @@ export interface ExecutionSession {
 }
 
 export async function createExecutionSession(): Promise<ExecutionSession> {
-  return apiRequest<ExecutionSession>('POST', '/api/execution/session/create');
+  const response = await apiRequest('POST', '/api/execution/session/create');
+  return response.json();
 }
 
 export async function writeFilesToSession(sessionId: string, files: Array<{ path: string; content: string }>): Promise<void> {
