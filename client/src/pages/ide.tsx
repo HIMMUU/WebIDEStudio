@@ -129,99 +129,93 @@ export default function IDEPage() {
 
     setRunning(true);
     setTerminalOpen(true);
-    
-    const handleOutput = (output: ProcessOutput) => {
-      addTerminalOutput({
-        type: output.type,
-        content: output.content,
-      });
-    };
+    clearTerminal();
 
     try {
+      const { createExecutionSession, writeFilesToSession, executeCommand: execCmd, killProcess } = await import('@/lib/execution-client');
+      
+      const session = await createExecutionSession();
+      addTerminalOutput({ type: 'info', content: `✓ Execution environment ready\n` });
+
+      // Write all files
+      const filesToWrite: Array<{ path: string; content: string }> = [];
+      const collectFiles = (nodes: FileNode[]) => {
+        nodes.forEach(node => {
+          if (node.type === 'file' && node.content) {
+            filesToWrite.push({ path: node.path, content: node.content });
+          }
+          if (node.children) collectFiles(node.children);
+        });
+      };
+      collectFiles(files);
+
+      if (filesToWrite.length > 0) {
+        await writeFilesToSession(session.sessionId, filesToWrite);
+        addTerminalOutput({ type: 'info', content: `✓ Wrote ${filesToWrite.length} files\n` });
+      }
+
       const hasPackageJson = await checkPackageJson(files);
       
       if (hasPackageJson) {
-        addTerminalOutput({
-          type: 'command',
-          content: 'npm install',
-        });
+        addTerminalOutput({ type: 'command', content: 'npm install' });
         
-        const installExitCode = await installDependencies(handleOutput);
-        
-        if (installExitCode !== 0) {
-          addTerminalOutput({
-            type: 'stderr',
-            content: `npm install failed with exit code ${installExitCode}`,
-          });
-          setRunning(false);
-          return;
+        const installOutput = await execCmd(session.sessionId, 'npm', ['install']);
+        for await (const line of installOutput) {
+          addTerminalOutput({ type: 'stdout', content: line });
         }
-
-        addTerminalOutput({
-          type: 'info',
-          content: 'Dependencies installed. Starting project...',
-        });
 
         const isNextJs = await isNextJsProject(files);
         const scriptName = isNextJs ? 'dev' : 'start';
         
-        addTerminalOutput({
-          type: 'command',
-          content: `npm run ${scriptName}`,
-        });
+        addTerminalOutput({ type: 'command', content: `npm run ${scriptName}` });
 
-        const { kill, url } = await runScript(scriptName, handleOutput);
-        runningProcessRef.current = { kill };
-        if (url) {
-          setPreviewUrl(url);
-        }
-      } else {
-        addTerminalOutput({
-          type: 'info',
-          content: 'No package.json found. Looking for executable files...',
-        });
-
-        const findMainFile = (nodes: FileNode[]): string | null => {
-          for (const node of nodes) {
-            if (node.type === 'file') {
-              if (node.name === 'index.js' || node.name === 'main.js' || node.name === 'app.js') {
-                return node.path;
+        const output = await execCmd(session.sessionId, 'npm', ['run', scriptName]);
+        let urlDetected = false;
+        
+        for await (const line of output) {
+          addTerminalOutput({ type: 'stdout', content: line });
+          
+          if (!urlDetected) {
+            const patterns = [
+              /https?:\/\/localhost:\d+/,
+              /http:\/\/[\d.]+:\d+/,
+              /Local:\s+(https?:\/\/[^\s]+)/,
+              /url:\s+(https?:\/\/[^\s]+)/,
+              /ready.*http:\/\/localhost:\d+/i,
+            ];
+            
+            for (const pattern of patterns) {
+              const match = line.match(pattern);
+              if (match) {
+                const url = match[1] || match[0];
+                setPreviewUrl(url);
+                urlDetected = true;
+                addTerminalOutput({ type: 'info', content: `\n✓ Preview: ${url}\n` });
+                break;
               }
             }
-            if (node.children) {
-              const found = findMainFile(node.children);
-              if (found) return found;
-            }
           }
-          return null;
-        };
-
-        const mainFile = findMainFile(files);
-        
-        if (mainFile) {
-          addTerminalOutput({
-            type: 'command',
-            content: `node ${mainFile}`,
-          });
-          
-          const { runNodeFile } = await import('@/lib/webcontainer');
-          await runNodeFile(mainFile, handleOutput);
-        } else {
-          addTerminalOutput({
-            type: 'stderr',
-            content: 'No executable entry point found.',
-          });
+        }
+      } else {
+        addTerminalOutput({ type: 'info', content: 'Starting project...' });
+        const output = await execCmd(session.sessionId, 'npm', ['start']);
+        for await (const line of output) {
+          addTerminalOutput({ type: 'stdout', content: line });
         }
       }
+
+      runningProcessRef.current = { 
+        kill: () => killProcess(session.sessionId).catch(() => {}) 
+      };
     } catch (error) {
       addTerminalOutput({
         type: 'stderr',
-        content: error instanceof Error ? error.message : 'An error occurred during execution',
+        content: error instanceof Error ? error.message : 'Execution failed',
       });
     } finally {
       setRunning(false);
     }
-  }, [files, setRunning, setTerminalOpen, addTerminalOutput, toast]);
+  }, [files, setRunning, setTerminalOpen, addTerminalOutput, setPreviewUrl, clearTerminal, toast]);
 
   const handleStopProject = useCallback(() => {
     if (runningProcessRef.current) {
