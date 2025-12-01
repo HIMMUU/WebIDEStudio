@@ -141,11 +141,11 @@ export function subscribeToOutput(sessionId: string, callback: (data: string) =>
 
   // Return unsubscribe function
   return () => {
-    const listeners = listeners.get(sessionId);
-    if (listeners) {
-      const index = listeners.indexOf(callback);
+    const sessionListeners2 = listeners.get(sessionId);
+    if (sessionListeners2) {
+      const index = sessionListeners2.indexOf(callback);
       if (index > -1) {
-        listeners.splice(index, 1);
+        sessionListeners2.splice(index, 1);
       }
     }
   };
