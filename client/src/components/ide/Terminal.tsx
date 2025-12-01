@@ -7,7 +7,7 @@ import { Trash2, Terminal as TerminalIcon, ChevronUp, ChevronDown, X, Send } fro
 import { cn } from '@/lib/utils';
 
 export function TerminalPanel() {
-  const { terminalOutputs, clearTerminal, isTerminalOpen, setTerminalOpen, addTerminalOutput } = useIDEStore();
+  const { terminalOutputs, clearTerminal, isTerminalOpen, setTerminalOpen, addTerminalOutput, currentSessionId } = useIDEStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState('');
   const [isExecuting, setIsExecuting] = useState(false);
@@ -19,7 +19,7 @@ export function TerminalPanel() {
   }, [terminalOutputs]);
 
   const handleExecuteCommand = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !currentSessionId) return;
     
     addTerminalOutput({ type: 'command', content: input });
     setInput('');
@@ -30,10 +30,8 @@ export function TerminalPanel() {
       const command = parts[0];
       const args = parts.slice(1);
 
-      const { executeCommand, createExecutionSession } = await import('@/lib/execution-client');
-      const session = await createExecutionSession();
-      
-      const output = await executeCommand(session.sessionId, command, args);
+      const { executeCommand } = await import('@/lib/execution-client');
+      const output = await executeCommand(currentSessionId, command, args);
       for await (const line of output) {
         addTerminalOutput({ type: 'stdout', content: line });
       }
@@ -138,7 +136,7 @@ export function TerminalPanel() {
             <Button
               size="icon"
               onClick={handleExecuteCommand}
-              disabled={isExecuting || !input.trim()}
+              disabled={isExecuting || !input.trim() || !currentSessionId}
               data-testid="button-execute-command"
             >
               <Send className="h-4 w-4" />

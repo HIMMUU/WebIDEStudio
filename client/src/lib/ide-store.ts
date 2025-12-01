@@ -43,6 +43,8 @@ interface IDEState {
   // Execution
   isRunning: boolean;
   setRunning: (running: boolean) => void;
+  currentSessionId: string | null;
+  setCurrentSessionId: (id: string | null) => void;
   
   // Split view
   splitView: boolean;
@@ -215,6 +217,8 @@ export const useIDEStore = create<IDEState>((set, get) => ({
   // Execution
   isRunning: false,
   setRunning: (running) => set({ isRunning: running }),
+  currentSessionId: null,
+  setCurrentSessionId: (id) => set({ currentSessionId: id }),
   
   // Split view
   splitView: false,

@@ -31,6 +31,7 @@ export default function IDEPage() {
     addTerminalOutput,
     setTerminalOpen,
     clearTerminal,
+    setCurrentSessionId,
   } = useIDEStore();
   
   const { toast } = useToast();
@@ -135,6 +136,7 @@ export default function IDEPage() {
       const { createExecutionSession, writeFilesToSession, executeCommand: execCmd, killProcess } = await import('@/lib/execution-client');
       
       const session = await createExecutionSession();
+      setCurrentSessionId(session.sessionId);
       addTerminalOutput({ type: 'info', content: `✓ Execution environment ready\n` });
 
       // Write all files
