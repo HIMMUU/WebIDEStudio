@@ -98,16 +98,14 @@ export default function IDEPage() {
             content: 'Initializing WebContainer...',
           });
           await mountFiles(data.data.files);
-          if (isWebContainerAvailable()) {
-            addTerminalOutput({
-              type: 'info',
-              content: 'Ready to run. Click "Run" to execute your project.',
-            });
-          }
+          addTerminalOutput({
+            type: 'info',
+            content: 'Ready to run. Click "Run" to execute your project.',
+          });
         } catch (err) {
           addTerminalOutput({
             type: 'info',
-            content: 'WebContainer not available in this environment - code execution disabled.',
+            content: 'WebContainer initialization skipped - attempting to run anyway.',
           });
         }
       }
@@ -121,15 +119,6 @@ export default function IDEPage() {
       toast({
         title: 'No files loaded',
         description: 'Load a repository first before running',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!isWebContainerAvailable()) {
-      toast({
-        title: 'WebContainer not available',
-        description: 'Code execution is not available in this environment',
         variant: 'destructive',
       });
       return;
