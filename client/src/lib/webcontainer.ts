@@ -3,14 +3,53 @@ import type { FileNode } from '@shared/schema';
 
 let webcontainerInstance: WebContainer | null = null;
 let isBooting = false;
-let bootFailed = true; // Default to failed to avoid SharedArrayBuffer issues
+let bootFailed = false;
+let bootError: Error | null = null;
 
 export async function getWebContainer(): Promise<WebContainer> {
-  throw new Error('WebContainer is not available in this environment');
+  if (bootFailed) {
+    throw bootError || new Error('WebContainer is not available in this environment');
+  }
+
+  if (webcontainerInstance) {
+    return webcontainerInstance;
+  }
+
+  if (isBooting) {
+    return new Promise((resolve, reject) => {
+      const check = setInterval(() => {
+        if (bootFailed) {
+          clearInterval(check);
+          reject(bootError || new Error('WebContainer boot failed'));
+        } else if (webcontainerInstance) {
+          clearInterval(check);
+          resolve(webcontainerInstance);
+        }
+      }, 100);
+      
+      setTimeout(() => {
+        clearInterval(check);
+        reject(new Error('WebContainer boot timeout'));
+      }, 30000);
+    });
+  }
+
+  isBooting = true;
+  
+  try {
+    webcontainerInstance = await WebContainer.boot();
+    isBooting = false;
+    return webcontainerInstance;
+  } catch (error) {
+    isBooting = false;
+    bootFailed = true;
+    bootError = error instanceof Error ? error : new Error('WebContainer boot failed');
+    throw bootError;
+  }
 }
 
 export function isWebContainerAvailable(): boolean {
-  return false;
+  return !bootFailed && webcontainerInstance !== null;
 }
 
 interface FileSystemTree {
