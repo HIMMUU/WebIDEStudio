@@ -81,9 +81,9 @@ async function* parseServerSentEvents(stream: ReadableStream): AsyncIterable<str
 }
 
 export async function killProcess(sessionId: string): Promise<void> {
-  return apiRequest('POST', '/api/execution/kill', { sessionId });
+  await apiRequest('POST', '/api/execution/kill', { sessionId });
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
-  return apiRequest('DELETE', `/api/execution/session/${sessionId}`);
+  await apiRequest('DELETE', `/api/execution/session/${sessionId}`);
 }
