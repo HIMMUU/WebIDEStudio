@@ -3,20 +3,34 @@ import type { FileNode } from '@shared/schema';
 
 let webcontainerInstance: WebContainer | null = null;
 let isBooting = false;
+let bootFailed = false;
+let bootError: Error | null = null;
 
 export async function getWebContainer(): Promise<WebContainer> {
+  if (bootFailed) {
+    throw bootError || new Error('WebContainer is not available in this environment');
+  }
+
   if (webcontainerInstance) {
     return webcontainerInstance;
   }
 
   if (isBooting) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const check = setInterval(() => {
-        if (webcontainerInstance) {
+        if (bootFailed) {
+          clearInterval(check);
+          reject(bootError || new Error('WebContainer boot failed'));
+        } else if (webcontainerInstance) {
           clearInterval(check);
           resolve(webcontainerInstance);
         }
       }, 100);
+      
+      setTimeout(() => {
+        clearInterval(check);
+        reject(new Error('WebContainer boot timeout'));
+      }, 30000);
     });
   }
 
@@ -28,8 +42,14 @@ export async function getWebContainer(): Promise<WebContainer> {
     return webcontainerInstance;
   } catch (error) {
     isBooting = false;
-    throw error;
+    bootFailed = true;
+    bootError = error instanceof Error ? error : new Error('WebContainer boot failed');
+    throw bootError;
   }
+}
+
+export function isWebContainerAvailable(): boolean {
+  return !bootFailed && webcontainerInstance !== null;
 }
 
 interface FileSystemTree {
@@ -64,9 +84,14 @@ function buildFileSystemTree(files: FileNode[]): FileSystemTree {
 }
 
 export async function mountFiles(files: FileNode[]): Promise<void> {
-  const container = await getWebContainer();
-  const tree = buildFileSystemTree(files);
-  await container.mount(tree);
+  try {
+    const container = await getWebContainer();
+    const tree = buildFileSystemTree(files);
+    await container.mount(tree);
+  } catch (error) {
+    console.warn('WebContainer mount failed (this is expected in some environments):', error);
+    // Silently fail - WebContainers may not be available
+  }
 }
 
 export interface ProcessOutput {

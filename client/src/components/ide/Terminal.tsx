@@ -60,9 +60,9 @@ export function TerminalPanel() {
 
       {isTerminalOpen && (
         <ScrollArea className="flex-1" ref={scrollRef}>
-          <div className="p-4 font-mono text-sm space-y-1">
+          <div className="p-4 font-mono text-sm space-y-0.5">
             {terminalOutputs.length === 0 ? (
-              <div className="text-muted-foreground text-xs">
+              <div className="text-muted-foreground text-xs py-8">
                 Terminal ready. Click "Run" to execute your project.
               </div>
             ) : (
@@ -70,17 +70,20 @@ export function TerminalPanel() {
                 <div
                   key={output.id}
                   className={cn(
-                    "whitespace-pre-wrap break-all",
-                    output.type === 'stderr' && "text-destructive",
+                    "py-0.5 px-2 hover-elevate rounded cursor-text select-all",
+                    output.type === 'stderr' && "text-destructive bg-destructive/5",
                     output.type === 'info' && "text-muted-foreground",
-                    output.type === 'command' && "text-primary font-medium"
+                    output.type === 'command' && "text-primary font-medium bg-primary/5"
                   )}
                   data-testid={`terminal-output-${output.id}`}
+                  title="Click to select and copy"
                 >
-                  {output.type === 'command' && (
-                    <span className="text-muted-foreground mr-2">$</span>
-                  )}
-                  {output.content}
+                  <div className="whitespace-pre-wrap break-all">
+                    {output.type === 'command' && (
+                      <span className="text-muted-foreground mr-2">$</span>
+                    )}
+                    {output.content}
+                  </div>
                 </div>
               ))
             )}

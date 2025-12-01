@@ -10,7 +10,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/queryClient';
 import type { FileNode } from '@shared/schema';
-import { mountFiles, installDependencies, runScript, checkPackageJson, writeFile as writeContainerFile, type ProcessOutput } from '@/lib/webcontainer';
+import { mountFiles, installDependencies, runScript, checkPackageJson, writeFile as writeContainerFile, isWebContainerAvailable, type ProcessOutput } from '@/lib/webcontainer';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -95,17 +95,19 @@ export default function IDEPage() {
         try {
           addTerminalOutput({
             type: 'info',
-            content: 'Mounting files to WebContainer...',
+            content: 'Initializing WebContainer...',
           });
           await mountFiles(data.data.files);
-          addTerminalOutput({
-            type: 'info',
-            content: 'Files mounted successfully.',
-          });
+          if (isWebContainerAvailable()) {
+            addTerminalOutput({
+              type: 'info',
+              content: 'Ready to run. Click "Run" to execute your project.',
+            });
+          }
         } catch (err) {
           addTerminalOutput({
-            type: 'stderr',
-            content: 'WebContainer mounting failed. Code execution may not work.',
+            type: 'info',
+            content: 'WebContainer not available in this environment - code execution disabled.',
           });
         }
       }
@@ -119,6 +121,15 @@ export default function IDEPage() {
       toast({
         title: 'No files loaded',
         description: 'Load a repository first before running',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!isWebContainerAvailable()) {
+      toast({
+        title: 'WebContainer not available',
+        description: 'Code execution is not available in this environment',
         variant: 'destructive',
       });
       return;
