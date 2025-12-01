@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { fetchRepository, fetchFileContent, parseGitHubUrl } from "./github";
 import { loadRepoRequestSchema, fileOperationSchema, type FileNode } from "@shared/schema";
 import { z } from "zod";
+import { createSession, writeFileToSession, executeCommand, subscribeToOutput, killProcess, getSessionWorkdir, deleteSession } from "./execution";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -312,6 +313,90 @@ export async function registerRoutes(
         success: false,
         error: error instanceof Error ? error.message : "Failed to delete file",
       });
+    }
+  });
+
+  // Execution endpoints
+  app.post("/api/execution/session/create", (req, res) => {
+    try {
+      const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const workdir = createSession(sessionId);
+      res.json({ success: true, sessionId, workdir });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Failed to create session' });
+    }
+  });
+
+  app.post("/api/execution/files", (req, res) => {
+    try {
+      const { sessionId, files } = req.body;
+      if (!sessionId || !Array.isArray(files)) {
+        res.status(400).json({ success: false, error: 'Missing sessionId or files' });
+        return;
+      }
+
+      files.forEach((file: { path: string; content: string }) => {
+        writeFileToSession(sessionId, file.path, file.content);
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Failed to write files' });
+    }
+  });
+
+  app.post("/api/execution/command", async (req, res) => {
+    try {
+      const { sessionId, command, args } = req.body;
+      if (!sessionId || !command) {
+        res.status(400).json({ success: false, error: 'Missing sessionId or command' });
+        return;
+      }
+
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      const unsubscribe = subscribeToOutput(sessionId, (data) => {
+        res.write(`data: ${JSON.stringify({ output: data })}\n\n`);
+      });
+
+      res.write(`data: ${JSON.stringify({ output: `> ${command} ${args?.join(' ') || ''}\n` })}\n\n`);
+
+      try {
+        await executeCommand(sessionId, command, args || []);
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      } catch (error) {
+        res.write(`data: ${JSON.stringify({ output: `[Error] ${error instanceof Error ? error.message : 'Unknown error'}\n` })}\n\n`);
+      }
+
+      res.end();
+      unsubscribe();
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Failed to execute command' });
+    }
+  });
+
+  app.post("/api/execution/kill", (req, res) => {
+    try {
+      const { sessionId } = req.body;
+      if (!sessionId) {
+        res.status(400).json({ success: false, error: 'Missing sessionId' });
+        return;
+      }
+      killProcess(sessionId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Failed to kill process' });
+    }
+  });
+
+  app.delete("/api/execution/session/:sessionId", (req, res) => {
+    try {
+      deleteSession(req.params.sessionId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Failed to delete session' });
     }
   });
 
