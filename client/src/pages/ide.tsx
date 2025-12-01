@@ -11,7 +11,6 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/queryClient';
 import type { FileNode } from '@shared/schema';
-import { mountFiles, installDependencies, runScript, checkPackageJson, isNextJsProject, writeFile as writeContainerFile, isWebContainerAvailable, type ProcessOutput } from '@/lib/webcontainer';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -55,11 +54,6 @@ export default function IDEPage() {
             const currentActiveTab = currentTabs.find(t => t.id === currentActiveId);
             if (currentActiveTab && currentActiveId) {
               saveTab(currentActiveId);
-              try {
-                await writeContainerFile(currentActiveTab.path, currentActiveTab.content);
-              } catch (error) {
-                console.log('WebContainer not ready, file saved locally');
-              }
               toast({
                 title: 'File saved',
                 description: currentActiveTab.name,
@@ -94,25 +88,10 @@ export default function IDEPage() {
         type: 'info',
         content: `Repository "${data.data.name}" loaded successfully with ${countFiles(data.data.files)} files.`,
       });
-
-      if (data.data.files.length > 0) {
-        try {
-          addTerminalOutput({
-            type: 'info',
-            content: 'Initializing WebContainer...',
-          });
-          await mountFiles(data.data.files);
-          addTerminalOutput({
-            type: 'info',
-            content: 'Ready to run. Click "Run" to execute your project.',
-          });
-        } catch (err) {
-          addTerminalOutput({
-            type: 'info',
-            content: 'WebContainer initialization skipped - attempting to run anyway.',
-          });
-        }
-      }
+      addTerminalOutput({
+        type: 'info',
+        content: 'Ready to run. Click "Run" to execute your project.',
+      });
     } finally {
       setLoading(false);
     }
@@ -161,7 +140,7 @@ export default function IDEPage() {
         addTerminalOutput({ type: 'info', content: `Note: Files sync had issues, but continuing...\n` });
       }
 
-      const hasPackageJson = await checkPackageJson(files);
+      const hasPackageJson = files.some(f => f.type === 'file' && f.name === 'package.json');
       
       if (hasPackageJson) {
         addTerminalOutput({ type: 'command', content: 'npm install' });
@@ -171,7 +150,7 @@ export default function IDEPage() {
           addTerminalOutput({ type: 'stdout', content: line });
         }
 
-        const isNextJs = await isNextJsProject(files);
+        const isNextJs = files.some(f => f.type === 'file' && f.name === 'next.config.js');
         const scriptName = isNextJs ? 'dev' : 'start';
         
         addTerminalOutput({ type: 'command', content: `npm run ${scriptName}` });
