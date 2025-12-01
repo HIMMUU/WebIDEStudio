@@ -10,7 +10,19 @@ export async function createExecutionSession(): Promise<ExecutionSession> {
 }
 
 export async function writeFilesToSession(sessionId: string, files: Array<{ path: string; content: string }>): Promise<void> {
-  return apiRequest('POST', '/api/execution/files', { sessionId, files });
+  if (!sessionId || !files || files.length === 0) {
+    console.warn('writeFilesToSession: missing sessionId or files', { sessionId, filesCount: files?.length });
+    return;
+  }
+  const response = await fetch('/api/execution/files', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, files }),
+  });
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to write files: ${response.status} ${error}`);
+  }
 }
 
 export async function executeCommand(

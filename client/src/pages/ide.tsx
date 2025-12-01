@@ -143,7 +143,7 @@ export default function IDEPage() {
       const filesToWrite: Array<{ path: string; content: string }> = [];
       const collectFiles = (nodes: FileNode[]) => {
         nodes.forEach(node => {
-          if (node.type === 'file' && node.content) {
+          if (node.type === 'file' && node.content !== undefined) {
             filesToWrite.push({ path: node.path, content: node.content });
           }
           if (node.children) collectFiles(node.children);
@@ -151,9 +151,14 @@ export default function IDEPage() {
       };
       collectFiles(files);
 
-      if (filesToWrite.length > 0) {
-        await writeFilesToSession(session.sessionId, filesToWrite);
-        addTerminalOutput({ type: 'info', content: `✓ Wrote ${filesToWrite.length} files\n` });
+      try {
+        if (filesToWrite.length > 0) {
+          await writeFilesToSession(session.sessionId, filesToWrite);
+          addTerminalOutput({ type: 'info', content: `✓ Wrote ${filesToWrite.length} files\n` });
+        }
+      } catch (err) {
+        console.error('Failed to write files:', err);
+        addTerminalOutput({ type: 'info', content: `Note: Files sync had issues, but continuing...\n` });
       }
 
       const hasPackageJson = await checkPackageJson(files);
