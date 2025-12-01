@@ -1,0 +1,150 @@
+**Title: Build a Full VS Code-Like Web IDE with GitHub Repo Loading & On-Web Code Execution**
+
+I want you to act as a **senior full-stack architect** and help me build a complete **VS-Code-like online IDE**.
+
+Here is exactly what I want the system to do:
+
+---
+
+## 🔥 **Core Requirements**
+
+### **1. VS Code–Like IDE on Web**
+
+Build a full web-based IDE with features like:
+
+- File explorer
+- Code editor (use Monaco Editor)
+- Syntax highlighting for JS, TS, Python, HTML, CSS
+- Tabs
+- Auto-save
+- Keyboard shortcuts
+- IntelliSense (Monaco basic completion is fine)
+- Split views
+- Dark & light themes
+
+---
+
+## **2. Load a GitHub Repo from URL**
+
+User will paste a GitHub repo URL:
+
+`https://github.com/username/repo`
+
+The system must:
+
+- Fetch entire repository (via GitHub API or git clone backend)
+- Parse all folders/files
+- Display them inside file explorer
+- Load contents into the Monaco editor when clicked
+
+---
+
+## **3. Allow Editing**
+
+Once files are loaded from GitHub:
+
+- User can edit files
+- Create/delete/move files
+- Modify code
+- Auto-save changes to in-memory FS
+- (Optional) Allow pushing back to GitHub via OAuth
+
+---
+
+## **4. Run Code on Web**
+
+User should be able to click **Run** and the IDE should execute the project.
+
+Execution options I want:
+
+### **Option A — Run JavaScript/Node projects**
+
+Use:
+
+- **WebContainers (StackBlitz Turbo)** OR
+- **Docker sandbox on backend**
+
+The system should support:
+
+- npm install
+- running scripts
+- console output panel
+- error logging
+
+### 
+
+### **Runtime Features**
+
+- Show terminal output
+- Show errors
+- Allow interactive commands
+
+---
+
+## **5. Backend Requirements**
+
+Backend should:
+
+- Fetch GitHub repo
+- Provide file system structure
+- Handle runtime execution (if not browser-based)
+- Save projects to DB (optional)
+
+Prefer backend stack:
+
+- **Node.js + Express**
+- OR **NestJS**
+- OR **Next.js API routes**
+
+---
+
+## 
+
+## **7. UI Requirements**
+
+Follow clean, developer-friendly UI like VS Code:
+
+- Left: File Explorer
+- Center: Monaco Editor
+- Bottom: Terminal
+- Top: Toolbar (Open Repo, Run, Save, Theme)
+
+Use styling:
+
+- TailwindCSS
+- ShadCN components
+- Icons from Lucide
+
+---
+
+## **8. Provide Complete Output**
+
+When answering, give me **everything**:
+
+### **1. Full System Architecture**
+
+- Frontend
+- Backend
+- GitHub fetcher
+- FS parser
+- Execution engine
+- Terminal emulator
+
+### **2. Final Tech Stack Recommendation**
+
+### **3. Step-by-Step Implementation Guide**
+
+- Setup Monaco editor
+- Setup file explorer
+- Load GitHub repo
+- Run the code
+- Connect terminal
+- Host project
+
+### **4. Complete Code Samples**
+
+- React components
+- File system handling
+- GitHub API code
+- WebContainer setup
+- Terminal integration
