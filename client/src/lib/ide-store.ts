@@ -47,6 +47,12 @@ interface IDEState {
   // Split view
   splitView: boolean;
   toggleSplitView: () => void;
+
+  // Preview
+  previewUrl: string | null;
+  setPreviewUrl: (url: string | null) => void;
+  previewOpen: boolean;
+  setPreviewOpen: (open: boolean) => void;
 }
 
 const getLanguageFromPath = (path: string): string => {
@@ -213,6 +219,12 @@ export const useIDEStore = create<IDEState>((set, get) => ({
   // Split view
   splitView: false,
   toggleSplitView: () => set({ splitView: !get().splitView }),
+  
+  // Preview
+  previewUrl: null,
+  setPreviewUrl: (url) => set({ previewUrl: url }),
+  previewOpen: false,
+  setPreviewOpen: (open) => set({ previewOpen: open }),
 }));
 
 // Initialize theme from localStorage

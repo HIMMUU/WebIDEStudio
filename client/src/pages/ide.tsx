@@ -3,6 +3,7 @@ import { FileExplorer } from '@/components/ide/FileExplorer';
 import { EditorTabs } from '@/components/ide/EditorTabs';
 import { MonacoEditor } from '@/components/ide/MonacoEditor';
 import { TerminalPanel } from '@/components/ide/Terminal';
+import { PreviewPanel } from '@/components/ide/PreviewPanel';
 import { Toolbar } from '@/components/ide/Toolbar';
 import { StatusBar } from '@/components/ide/StatusBar';
 import { useIDEStore } from '@/lib/ide-store';
@@ -25,6 +26,8 @@ export default function IDEPage() {
     setRunning,
     isSidebarOpen,
     splitView,
+    previewOpen,
+    setPreviewUrl,
     addTerminalOutput,
     setTerminalOpen,
     clearTerminal,
@@ -164,8 +167,11 @@ export default function IDEPage() {
           content: 'npm start',
         });
 
-        const { kill } = await runScript('start', handleOutput);
+        const { kill, url } = await runScript('start', handleOutput);
         runningProcessRef.current = { kill };
+        if (url) {
+          setPreviewUrl(url);
+        }
       } else {
         addTerminalOutput({
           type: 'info',
@@ -245,7 +251,7 @@ export default function IDEPage() {
             </>
           )}
 
-          <ResizablePanel defaultSize={80}>
+          <ResizablePanel defaultSize={previewOpen ? 50 : 80}>
             <ResizablePanelGroup direction="vertical">
               <ResizablePanel defaultSize={75} minSize={30}>
                 <div className="h-full flex flex-col">
@@ -275,6 +281,15 @@ export default function IDEPage() {
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
+
+          {previewOpen && (
+            <>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={50} minSize={20}>
+                <PreviewPanel />
+              </ResizablePanel>
+            </>
+          )}
         </ResizablePanelGroup>
       </div>
 

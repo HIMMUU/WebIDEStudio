@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GitBranch, Play, Square, Sun, Moon, Loader2, Code2, PanelLeftClose, PanelLeft, Columns } from 'lucide-react';
+import { GitBranch, Play, Square, Sun, Moon, Loader2, Code2, PanelLeftClose, PanelLeft, Columns, Chrome } from 'lucide-react';
 import { SiGithub } from 'react-icons/si';
 import { Button } from '@/components/ui/button';
 import { useIDEStore } from '@/lib/ide-store';
@@ -34,6 +34,8 @@ export function Toolbar({ onLoadRepo, onRunProject, onStopProject }: ToolbarProp
     setSidebarOpen,
     splitView,
     toggleSplitView,
+    previewOpen,
+    setPreviewOpen,
     projectName,
   } = useIDEStore();
   
@@ -123,6 +125,22 @@ export function Toolbar({ onLoadRepo, onRunProject, onStopProject }: ToolbarProp
           </TooltipTrigger>
           <TooltipContent>
             <p>Toggle Split View</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant={previewOpen ? "default" : "ghost"}
+              onClick={() => setPreviewOpen(!previewOpen)}
+              data-testid="button-toggle-preview"
+            >
+              <Chrome className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Toggle Preview Panel</p>
           </TooltipContent>
         </Tooltip>
       </div>

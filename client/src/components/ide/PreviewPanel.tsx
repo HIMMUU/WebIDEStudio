@@ -1,72 +1,50 @@
-import { useRef, useEffect, useState } from 'react';
 import { useIDEStore } from '@/lib/ide-store';
-import { Eye, Loader2, AlertCircle } from 'lucide-react';
+import { Chrome, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export function PreviewPanel() {
-  const { tabs, activeTabId } = useIDEStore();
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { previewUrl, previewOpen, setPreviewOpen } = useIDEStore();
 
-  const activeTab = tabs.find((t) => t.id === activeTabId);
-  const isHtmlFile = activeTab?.language === 'html' || activeTab?.name.endsWith('.html');
-
-  useEffect(() => {
-    if (!isHtmlFile || !activeTab || !iframeRef.current) {
-      setError(null);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const doc = iframeRef.current.contentDocument;
-      if (doc) {
-        doc.open();
-        doc.write(activeTab.content || '');
-        doc.close();
-        setIsLoading(false);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to render preview');
-      setIsLoading(false);
-    }
-  }, [activeTab?.content, activeTab?.id, isHtmlFile]);
-
-  if (!isHtmlFile) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center bg-background text-muted-foreground">
-        <Eye className="h-16 w-16 mb-4 opacity-30" />
-        <p className="text-lg font-medium">No Preview</p>
-        <p className="text-sm mt-1 opacity-70">Open an HTML file to preview</p>
-      </div>
-    );
+  if (!previewOpen) {
+    return null;
   }
 
   return (
-    <div className="h-full w-full flex flex-col overflow-hidden bg-white dark:bg-slate-900">
-      <div className="flex-1 overflow-hidden relative">
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        )}
-        
-        {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10 p-4">
-            <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-            <p className="text-sm text-destructive text-center">{error}</p>
-          </div>
-        )}
+    <div className="h-full w-full flex flex-col bg-background border-l border-border overflow-hidden">
+      <div className="h-10 flex items-center justify-between px-4 border-b border-border shrink-0">
+        <div className="flex items-center gap-2">
+          <Chrome className="h-4 w-4 text-muted-foreground" />
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Preview
+          </span>
+        </div>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-6 w-6"
+          onClick={() => setPreviewOpen(false)}
+          data-testid="button-close-preview"
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </div>
 
-        <iframe
-          ref={iframeRef}
-          className="h-full w-full border-0"
-          title="HTML Preview"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-        />
+      <div className="flex-1 overflow-hidden">
+        {previewUrl ? (
+          <iframe
+            src={previewUrl}
+            className="h-full w-full border-0"
+            title="React App Preview"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          />
+        ) : (
+          <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-4">
+            <Chrome className="h-16 w-16 mb-4 opacity-30" />
+            <p className="text-sm">No preview available</p>
+            <p className="text-xs opacity-70 mt-1 text-center">Run a React or Next.js app to see preview</p>
+          </div>
+        )}
       </div>
     </div>
   );
