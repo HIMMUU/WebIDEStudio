@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { GitBranch, Play, Square, Sun, Moon, Loader2, Code2, PanelLeftClose, PanelLeft, Columns } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { GitBranch, Play, Square, Sun, Moon, Loader2, Code2, PanelLeftClose, PanelLeft, Columns, AlertCircle } from 'lucide-react';
 import { SiGithub } from 'react-icons/si';
 import { Button } from '@/components/ui/button';
 import { useIDEStore } from '@/lib/ide-store';
@@ -39,7 +39,23 @@ export function Toolbar({ onLoadRepo, onRunProject, onStopProject }: ToolbarProp
   
   const [repoUrl, setRepoUrl] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [webContainerAvailable, setWebContainerAvailable] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const checkWebContainer = async () => {
+      try {
+        const { isWebContainerAvailable } = await import('@/lib/webcontainer');
+        setWebContainerAvailable(isWebContainerAvailable());
+      } catch {
+        setWebContainerAvailable(false);
+      }
+    };
+    
+    checkWebContainer();
+    const interval = setInterval(checkWebContainer, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLoadRepo = async () => {
     if (!repoUrl.trim()) {
@@ -193,7 +209,7 @@ export function Toolbar({ onLoadRepo, onRunProject, onStopProject }: ToolbarProp
             <Square className="h-4 w-4 mr-2" />
             Stop
           </Button>
-        ) : (
+        ) : webContainerAvailable ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -208,7 +224,24 @@ export function Toolbar({ onLoadRepo, onRunProject, onStopProject }: ToolbarProp
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Run Project</p>
+              <p>Run Project (Ctrl+Enter)</p>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled
+                data-testid="button-run-unavailable"
+              >
+                <AlertCircle className="h-4 w-4 mr-2" />
+                Not Available
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Code execution not available in this environment</p>
             </TooltipContent>
           </Tooltip>
         )}
