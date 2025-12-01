@@ -336,7 +336,27 @@ export async function registerRoutes(
       }
 
       files.forEach((file: { path: string; content: string }) => {
-        writeFileToSession(sessionId, file.path, file.content);
+        let content = file.content;
+        
+        // If this is package.json, modify dev script to use port 3000
+        if (file.path === 'package.json') {
+          try {
+            const pkg = JSON.parse(content);
+            if (pkg.scripts && pkg.scripts.dev) {
+              // Fix common Next.js and other dev scripts that default to port 5000
+              pkg.scripts.dev = pkg.scripts.dev
+                .replace(/next dev(?!\s+-p)/, 'next dev -p 3000')
+                .replace(/vite(?!\s+-p)/, 'vite -p 3000')
+                .replace(/node (?!.*-p)/, 'node --port 3000 ')
+                .replace(/npm start(?!\s+--\s+--port)/, 'PORT=3000 npm start');
+            }
+            content = JSON.stringify(pkg, null, 2);
+          } catch (e) {
+            // If parsing fails, just use original content
+          }
+        }
+        
+        writeFileToSession(sessionId, file.path, content);
       });
 
       res.json({ success: true });
