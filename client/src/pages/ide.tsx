@@ -1,0 +1,307 @@
+import { useEffect, useCallback, useRef } from 'react';
+import { FileExplorer } from '@/components/ide/FileExplorer';
+import { EditorTabs } from '@/components/ide/EditorTabs';
+import { MonacoEditor } from '@/components/ide/MonacoEditor';
+import { TerminalPanel } from '@/components/ide/Terminal';
+import { Toolbar } from '@/components/ide/Toolbar';
+import { StatusBar } from '@/components/ide/StatusBar';
+import { useIDEStore } from '@/lib/ide-store';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import { cn } from '@/lib/utils';
+import { apiRequest } from '@/lib/queryClient';
+import type { FileNode } from '@shared/schema';
+import { mountFiles, installDependencies, runScript, checkPackageJson, writeFile as writeContainerFile, type ProcessOutput } from '@/lib/webcontainer';
+import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+export default function IDEPage() {
+  const {
+    files,
+    setFiles,
+    setProjectName,
+    isLoading,
+    setLoading,
+    isRunning,
+    setRunning,
+    isSidebarOpen,
+    splitView,
+    addTerminalOutput,
+    setTerminalOpen,
+    clearTerminal,
+  } = useIDEStore();
+  
+  const { toast } = useToast();
+  const runningProcessRef = useRef<{ kill: () => void } | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+          case 'b':
+            e.preventDefault();
+            useIDEStore.getState().setSidebarOpen(!useIDEStore.getState().isSidebarOpen);
+            break;
+          case '`':
+            e.preventDefault();
+            useIDEStore.getState().setTerminalOpen(!useIDEStore.getState().isTerminalOpen);
+            break;
+          case 's':
+            e.preventDefault();
+            const { tabs: currentTabs, activeTabId: currentActiveId, markTabSaved: saveTab } = useIDEStore.getState();
+            const currentActiveTab = currentTabs.find(t => t.id === currentActiveId);
+            if (currentActiveTab && currentActiveId) {
+              saveTab(currentActiveId);
+              try {
+                await writeContainerFile(currentActiveTab.path, currentActiveTab.content);
+              } catch (error) {
+                console.log('WebContainer not ready, file saved locally');
+              }
+              toast({
+                title: 'File saved',
+                description: currentActiveTab.name,
+                duration: 3000,
+              });
+            }
+            break;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toast]);
+
+  const handleLoadRepo = useCallback(async (url: string) => {
+    setLoading(true);
+    clearTerminal();
+    
+    try {
+      const response = await apiRequest('POST', '/api/github/load', { repoUrl: url });
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to load repository');
+      }
+
+      setFiles(data.data.files);
+      setProjectName(data.data.name);
+      
+      addTerminalOutput({
+        type: 'info',
+        content: `Repository "${data.data.name}" loaded successfully with ${countFiles(data.data.files)} files.`,
+      });
+
+      if (data.data.files.length > 0) {
+        try {
+          addTerminalOutput({
+            type: 'info',
+            content: 'Mounting files to WebContainer...',
+          });
+          await mountFiles(data.data.files);
+          addTerminalOutput({
+            type: 'info',
+            content: 'Files mounted successfully.',
+          });
+        } catch (err) {
+          addTerminalOutput({
+            type: 'stderr',
+            content: 'WebContainer mounting failed. Code execution may not work.',
+          });
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, setFiles, setProjectName, addTerminalOutput, clearTerminal]);
+
+  const handleRunProject = useCallback(async () => {
+    if (files.length === 0) {
+      toast({
+        title: 'No files loaded',
+        description: 'Load a repository first before running',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setRunning(true);
+    setTerminalOpen(true);
+    
+    const handleOutput = (output: ProcessOutput) => {
+      addTerminalOutput({
+        type: output.type,
+        content: output.content,
+      });
+    };
+
+    try {
+      const hasPackageJson = await checkPackageJson(files);
+      
+      if (hasPackageJson) {
+        addTerminalOutput({
+          type: 'command',
+          content: 'npm install',
+        });
+        
+        const installExitCode = await installDependencies(handleOutput);
+        
+        if (installExitCode !== 0) {
+          addTerminalOutput({
+            type: 'stderr',
+            content: `npm install failed with exit code ${installExitCode}`,
+          });
+          setRunning(false);
+          return;
+        }
+
+        addTerminalOutput({
+          type: 'info',
+          content: 'Dependencies installed. Starting project...',
+        });
+
+        addTerminalOutput({
+          type: 'command',
+          content: 'npm start',
+        });
+
+        const { kill } = await runScript('start', handleOutput);
+        runningProcessRef.current = { kill };
+      } else {
+        addTerminalOutput({
+          type: 'info',
+          content: 'No package.json found. Looking for executable files...',
+        });
+
+        const findMainFile = (nodes: FileNode[]): string | null => {
+          for (const node of nodes) {
+            if (node.type === 'file') {
+              if (node.name === 'index.js' || node.name === 'main.js' || node.name === 'app.js') {
+                return node.path;
+              }
+            }
+            if (node.children) {
+              const found = findMainFile(node.children);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+
+        const mainFile = findMainFile(files);
+        
+        if (mainFile) {
+          addTerminalOutput({
+            type: 'command',
+            content: `node ${mainFile}`,
+          });
+          
+          const { runNodeFile } = await import('@/lib/webcontainer');
+          await runNodeFile(mainFile, handleOutput);
+        } else {
+          addTerminalOutput({
+            type: 'stderr',
+            content: 'No executable entry point found.',
+          });
+        }
+      }
+    } catch (error) {
+      addTerminalOutput({
+        type: 'stderr',
+        content: error instanceof Error ? error.message : 'An error occurred during execution',
+      });
+    } finally {
+      setRunning(false);
+    }
+  }, [files, setRunning, setTerminalOpen, addTerminalOutput, toast]);
+
+  const handleStopProject = useCallback(() => {
+    if (runningProcessRef.current) {
+      runningProcessRef.current.kill();
+      runningProcessRef.current = null;
+    }
+    setRunning(false);
+    addTerminalOutput({
+      type: 'info',
+      content: 'Process stopped.',
+    });
+  }, [setRunning, addTerminalOutput]);
+
+  return (
+    <div className="h-screen w-screen flex flex-col overflow-hidden bg-background">
+      <Toolbar
+        onLoadRepo={handleLoadRepo}
+        onRunProject={handleRunProject}
+        onStopProject={handleStopProject}
+      />
+
+      <div className="flex-1 overflow-hidden">
+        <ResizablePanelGroup direction="horizontal">
+          {isSidebarOpen && (
+            <>
+              <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
+                <FileExplorer />
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+            </>
+          )}
+
+          <ResizablePanel defaultSize={80}>
+            <ResizablePanelGroup direction="vertical">
+              <ResizablePanel defaultSize={75} minSize={30}>
+                <div className="h-full flex flex-col">
+                  <EditorTabs />
+                  <div className="flex-1 overflow-hidden">
+                    {splitView ? (
+                      <ResizablePanelGroup direction="horizontal">
+                        <ResizablePanel defaultSize={50}>
+                          <MonacoEditor />
+                        </ResizablePanel>
+                        <ResizableHandle withHandle />
+                        <ResizablePanel defaultSize={50}>
+                          <MonacoEditor />
+                        </ResizablePanel>
+                      </ResizablePanelGroup>
+                    ) : (
+                      <MonacoEditor />
+                    )}
+                  </div>
+                </div>
+              </ResizablePanel>
+
+              <ResizableHandle withHandle />
+
+              <ResizablePanel defaultSize={25} minSize={10} maxSize={50}>
+                <TerminalPanel />
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
+
+      <StatusBar />
+
+      {isLoading && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="text-lg font-medium">Loading repository...</p>
+            <p className="text-sm text-muted-foreground">This may take a moment for larger repositories</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function countFiles(nodes: FileNode[]): number {
+  let count = 0;
+  for (const node of nodes) {
+    if (node.type === 'file') {
+      count++;
+    }
+    if (node.children) {
+      count += countFiles(node.children);
+    }
+  }
+  return count;
+}
