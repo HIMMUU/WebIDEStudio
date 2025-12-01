@@ -7,11 +7,21 @@
     <meta property="og:title" content="CodeForge - Web IDE" />
     <meta property="og:description" content="A powerful VS Code-like web IDE with GitHub integration and in-browser code execution." />
     <meta property="og:type" content="website" />
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
     <title>CodeForge - Web IDE</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+      // Handle SharedArrayBuffer errors gracefully
+      window.addEventListener('error', (e) => {
+        if (e.message && e.message.includes('SharedArrayBuffer')) {
+          console.warn('SharedArrayBuffer not available - some features may be limited');
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
