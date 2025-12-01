@@ -89,8 +89,12 @@ export async function mountFiles(files: FileNode[]): Promise<void> {
     const tree = buildFileSystemTree(files);
     await container.mount(tree);
   } catch (error) {
-    console.warn('WebContainer mount failed (this is expected in some environments):', error);
-    // Silently fail - WebContainers may not be available
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    if (errorMsg.includes('SharedArrayBuffer') || errorMsg.includes('crossOriginIsolated')) {
+      console.warn('[CodeForge] WebContainer unavailable - SharedArrayBuffer not supported');
+    } else {
+      console.warn('[CodeForge] WebContainer mount failed:', errorMsg);
+    }
   }
 }
 
