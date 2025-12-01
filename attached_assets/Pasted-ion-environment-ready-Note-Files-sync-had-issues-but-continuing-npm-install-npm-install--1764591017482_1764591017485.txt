@@ -1,0 +1,127 @@
+ion environment ready
+Note: Files sync had issues, but continuing...
+$npm install
+> npm install
+[ERROR] npm error code Unknown system error -122
+[ERROR] npm error syscall open
+npm error path /tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package-lock.json
+[ERROR] npm error errno -122
+npm error Unknown system error -122: Unknown system error -122, open '/tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package-lock.json'
+[ERROR] npm error Log files were not written due to an error writing to the directory: /home/runner/.npm/_logs
+npm error You can rerun the command with `--loglevel=verbose` to see the logs in your terminal
+
+[Process exited with code 134]
+$npm run dev
+> npm run dev
+[ERROR] npm error code ENOENT
+[ERROR] npm error syscall open
+npm error path /tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package.json
+npm error errno -2
+npm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open '/tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package.json'
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+[ERROR] npm error Log files were not written due to an error writing to the directory: /home/runner/.npm/_logs
+npm error You can rerun the command with `--loglevel=verbose` to see the logs in your terminal
+
+[Process exited with code 254]
+$df
+> df 
+Filesystem                                              1K-blocks     Used Available Use% Mounted on
+overlay                                                  51494416 35669932  13604300  73% /
+tmpfs                                                       65536        0     65536   0% /dev
+overlay                                                  33554432  5695956  27647644  18% /nix
+tmpfs                                                    16461944    20072  16441872   1% /io
+/dev/nbd58                                               33554432  5695956  27647644  18% /tmp
+/dev/disk/by-label/nixos                                 51494416 35669932  13604300  73% /pid2
+/dev/disk/by-id/google-nixmodules-b6811df-us-central1-a  15132288 15132288         0 100% /mnt/nixmodules
+shm                                                         65536        0     65536   0% /dev/shm
+overlay                                                  51494416 35669932  13604300  73% /mnt/cacache/nix
+overlay                                                  51494416 35669932  13604300  73% /mnt/cacache/nix/store
+devtmpfs                                                  3292392        0   3292392   0% /dev/tty
+tmpfs                                                    32923884        0  32923884   0% /proc/acpi
+tmpfs                                                    32923884        0  32923884   0% /proc/scsi
+tmpfs                                                    32923884        0  32923884   0% /sys/firmware
+overlay                                                  33554432  5695956  27647644  18% /home/runner
+/dev/nbd56                                              268435456   554704 265842832   1% /home/runner/workspace
+/dev/nbd56                                              268435456   554704 265842832   1% /mnt/nix
+overlay                                                 268435456   554704 265842832   1% /nix/store
+
+[Process exited with code 0]
+$npm i
+> npm i
+[ERROR] npm error code Unknown system error -122
+[ERROR] npm error syscall open
+[ERROR] npm error path /tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package-lock.json
+[ERROR] npm error errno -122
+[ERROR] npm error Unknown system error -122: Unknown system error -122, open '/tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package-lock.json'
+[ERROR] npm error Log files were not written due to an error writing to the directory: /home/runner/.npm/_logs
+npm error You can rerun the command with `--loglevel=verbose` to see the logs in your terminal
+
+[Process exited with code 134]
+$npm run dev
+> npm run dev
+[ERROR] npm error code ENOENT
+[ERROR] npm error syscall open
+npm error path /tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package.json
+[ERROR] npm error errno -2
+npm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open '/tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package.json'
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+[ERROR] npm error Log files were not written due to an error writing to the directory: /home/runner/.npm/_logs
+npm error You can rerun the command with `--loglevel=verbose` to see the logs in your terminal
+
+[Process exited with code 254]
+$cd
+> cd 
+
+[Process exited with code 0]
+$cd app
+> cd app
+
+[Process exited with code 0]
+$npm i
+> npm i
+[ERROR] npm error code Unknown system error -122
+[ERROR] npm error syscall open
+npm error path /tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package-lock.json
+[ERROR] npm error errno -122
+npm error Unknown system error -122: Unknown system error -122, open '/tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package-lock.json'
+[ERROR] npm error Log files were not written due to an error writing to the directory: /home/runner/.npm/_logs
+npm error You can rerun the command with `--loglevel=verbose` to see the logs in your terminal
+
+[Process exited with code 134]
+$cd ..
+> cd ..
+
+[Process exited with code 0]
+$pwd
+> pwd 
+/tmp/codeforge-session-1764590723291-95703nhg6-1764590723291
+
+[Process exited with code 0]
+$npm run dev
+> npm run dev
+[ERROR] npm error code ENOENT
+[ERROR] npm error syscall open
+npm error path /tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package.json
+[ERROR] npm error errno -2
+[ERROR] npm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open '/tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package.json'
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+[ERROR] npm error Log files were not written due to an error writing to the directory: /home/runner/.npm/_logs
+npm error You can rerun the command with `--loglevel=verbose` to see the logs in your terminal
+
+[Process exited with code 254]
+$npm run build
+> npm run build
+[ERROR] npm error code ENOENT
+[ERROR] npm error syscall open
+npm error path /tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package.json
+[ERROR] npm error errno -2
+[ERROR] npm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open '/tmp/codeforge-session-1764590723291-95703nhg6-1764590723291/package.json'
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+[ERROR] npm error Log files were not written due to an error writing to the directory: /home/runner/.npm/_logs
+npm error You can rerun the command with `--loglevel=verbose` to see the logs in your terminal
+
+[Process exited with
