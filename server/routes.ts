@@ -346,35 +346,34 @@ export async function registerRoutes(
   });
 
   app.post("/api/execution/command", async (req, res) => {
-    try {
-      const { sessionId, command, args } = req.body;
-      if (!sessionId || !command) {
-        res.status(400).json({ success: false, error: 'Missing sessionId or command' });
-        return;
-      }
-
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-
-      const unsubscribe = subscribeToOutput(sessionId, (data) => {
-        res.write(`data: ${JSON.stringify({ output: data })}\n\n`);
-      });
-
-      res.write(`data: ${JSON.stringify({ output: `> ${command} ${args?.join(' ') || ''}\n` })}\n\n`);
-
-      try {
-        await executeCommand(sessionId, command, args || []);
-        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-      } catch (error) {
-        res.write(`data: ${JSON.stringify({ output: `[Error] ${error instanceof Error ? error.message : 'Unknown error'}\n` })}\n\n`);
-      }
-
-      res.end();
-      unsubscribe();
-    } catch (error) {
-      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Failed to execute command' });
+    const { sessionId, command, args } = req.body;
+    
+    // Validate before sending any response
+    if (!sessionId || !command) {
+      res.status(400).json({ success: false, error: 'Missing sessionId or command' });
+      return;
     }
+
+    // Now we can safely send SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const unsubscribe = subscribeToOutput(sessionId, (data) => {
+      res.write(`data: ${JSON.stringify({ output: data })}\n\n`);
+    });
+
+    res.write(`data: ${JSON.stringify({ output: `> ${command} ${args?.join(' ') || ''}\n` })}\n\n`);
+
+    try {
+      await executeCommand(sessionId, command, args || []);
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    } catch (error) {
+      res.write(`data: ${JSON.stringify({ output: `[Error] ${error instanceof Error ? error.message : 'Unknown error'}\n` })}\n\n`);
+    }
+
+    res.end();
+    unsubscribe();
   });
 
   app.post("/api/execution/kill", (req, res) => {
