@@ -81,7 +81,7 @@ export function executeCommand(
 
     session.lastActivity = Date.now();
 
-    const process = spawn(command, args, {
+    const spawnedProcess = spawn(command, args, {
       cwd: session.workdir,
       shell: true,
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -91,29 +91,29 @@ export function executeCommand(
       },
     });
 
-    session.process = process;
+    session.process = spawnedProcess;
 
     let outputBuffer = '';
 
-    process.stdout?.on('data', (data) => {
+    spawnedProcess.stdout?.on('data', (data) => {
       const chunk = data.toString();
       outputBuffer += chunk;
       broadcastOutput(sessionId, chunk);
     });
 
-    process.stderr?.on('data', (data) => {
+    spawnedProcess.stderr?.on('data', (data) => {
       const chunk = data.toString();
       outputBuffer += chunk;
       broadcastOutput(sessionId, `[ERROR] ${chunk}`);
     });
 
-    process.on('error', (error) => {
+    spawnedProcess.on('error', (error) => {
       const errorMsg = `\n[Process Error] ${error.message}\n`;
       broadcastOutput(sessionId, errorMsg);
       reject(error);
     });
 
-    process.on('close', (code) => {
+    spawnedProcess.on('close', (code) => {
       session.process = null;
       const exitMsg = code === 0 
         ? `\n[Process exited with code 0]\n`
