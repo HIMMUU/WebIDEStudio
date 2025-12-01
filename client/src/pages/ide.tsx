@@ -11,7 +11,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/queryClient';
 import type { FileNode } from '@shared/schema';
-import { mountFiles, installDependencies, runScript, checkPackageJson, writeFile as writeContainerFile, isWebContainerAvailable, type ProcessOutput } from '@/lib/webcontainer';
+import { mountFiles, installDependencies, runScript, checkPackageJson, isNextJsProject, writeFile as writeContainerFile, isWebContainerAvailable, type ProcessOutput } from '@/lib/webcontainer';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -162,12 +162,15 @@ export default function IDEPage() {
           content: 'Dependencies installed. Starting project...',
         });
 
+        const isNextJs = await isNextJsProject(files);
+        const scriptName = isNextJs ? 'dev' : 'start';
+        
         addTerminalOutput({
           type: 'command',
-          content: 'npm start',
+          content: `npm run ${scriptName}`,
         });
 
-        const { kill, url } = await runScript('start', handleOutput);
+        const { kill, url } = await runScript(scriptName, handleOutput);
         runningProcessRef.current = { kill };
         if (url) {
           setPreviewUrl(url);
