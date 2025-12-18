@@ -168,7 +168,7 @@ async function buildFileTree(
 
   const filesToFetch = treeItems.filter(item => {
     if (item.type !== 'blob') return false;
-    if (item.size && item.size > 100000) return false;
+    if (item.size && item.size > 200000) return false;
     
     const ext = item.path.split('.').pop()?.toLowerCase() || '';
     const filename = item.path.split('/').pop()?.toLowerCase() || '';
@@ -179,7 +179,7 @@ async function buildFileTree(
            filename === 'readme';
   });
 
-  const batchSize = 10;
+  const batchSize = 30;
   for (let i = 0; i < filesToFetch.length; i += batchSize) {
     const batch = filesToFetch.slice(i, i + batchSize);
     
